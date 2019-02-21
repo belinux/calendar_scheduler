@@ -1,0 +1,24 @@
+{
+	"schedule_type": "<date_specific|recurring|cron>*",
+	"timezone": "<valid_timezone>*",
+	"schedules": [
+		{
+			"start_date": "<mm/dd/yyyy>*",
+			"start_time": "<HH:MM AM/PM>*"
+		}
+	],
+	"end_date": "[<mm/dd/yyyy>]",
+	"end_time": "[<HH:MM AM/PM>]",
+	"recurring": {
+		"run_on_monday": "<true|false>",
+		"run_on_tuesday": "<true|false>",
+		"run_on_wednesday": "<true|false>",
+		"run_on_thursday": "<true|false>",
+		"run_on_friday": "<true|false>",
+		"repeat_every": "<any number>",
+		"repeat_every_unit": "<m|h|d|w|M|y>",
+		"repeat_for": "<any number>",
+		"repeat_for_unit": "<m|h|d|w|M|y>"
+	},
+	"cron": "<cron expression> : required if schedule_type is cron"
+}
