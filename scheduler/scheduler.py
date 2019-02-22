@@ -7,10 +7,55 @@ __version__ = 0.1
 
 import datetime
 import pytz
+from croniter import croniter
 from enums import TIMEZONES
 
 
+def timezone_required(func):
+    def wrapper(*args, **kwargs):
+        timezone = kwargs.get('timezone', None)
+        if timezone is None:
+            raise ValueError("timezone is required")
+        if timezone not in TIMEZONES:
+            raise ValueError("Invalid timezone {}".format(timezone))
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def validate_cron(func):
+    def wrapper(*args, **kwargs):
+        cron = kwargs.get('cron', None)
+        if not isinstance(cron, str):
+            raise TypeError("invalid cron")
+        if not croniter.is_valid(cron):
+            raise ValueError("Invalid cron specified {}".format(cron))
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def valid_schedule_type(func):
+    def wrapper(*args, **kwargs):
+        if 'schedule_data' not in kwargs:
+            raise ValueError("Invalid Schedule Type")
+        schedule_type = kwargs['schedule_data'].get('schedule_type', None)
+        if schedule_type is None or schedule_type.lower() not in ['date_specific', 'cron', 'recurring']:
+            raise ValueError("Invalid Scheduling Type")
+        return func(*args, **kwargs)
+    return wrapper
+
+
 class Scheduler(object):
+
+    def _is_a_date_or_datetime(self, value):
+        if not isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
+            return False
+        return True
+
+    def _is_a_timezone(self, timezone):
+        if timezone is None:
+            return False, None
+        if timezone not in TIMEZONES:
+            return False, "Not in timezones list"
 
     def _get_schedule_eta(self, timezone=None, start_date=None, start_time=None, _format=None):
         """
@@ -65,6 +110,7 @@ class Scheduler(object):
         _start_date_time = _start_date_time.astimezone(pytz.UTC)
         return _start_date_time  # exit
 
+    @timezone_required
     def get_next_eta_date_specific(self, timezone=None, _format=None, from_date=None, schedules=[]):
         """
         For multiple date & times
@@ -75,9 +121,7 @@ class Scheduler(object):
             raise ValueError("schedule info not provided")  # exit
         if not isinstance(schedules, list):
             raise TypeError("Invalid Type of schedule, expecting `list`")
-        if timezone not in TIMEZONES:
-            raise ValueError(
-                "Invalid timezone provided {}".format(timezone))  # exit
+
         if from_date is not None:
             if not isinstance(from_date, datetime.datetime):
                 raise ValueError("Invalid datetime reference")
@@ -107,11 +151,64 @@ class Scheduler(object):
                 break  # exit
         return eta
 
-    def get_next_eta_cron(self, timezone=None, _format=None, start_date=None, start_time=None, end_date=None, end_time=None, cron=None):
+    @timezone_required
+    @validate_cron
+    def get_next_eta_cron(self, timezone=None, _format=None, from_date=None, end_date=None, end_time=None, cron=None):
         """
         Which returns the next eta based on cron config
         """
-        pass
+        eta = None
+        _end_date = None
+        _end_time = None
+        _end_date_time = None
+
+        if from_date is not None:
+            if not isinstance(from_date, datetime.date) or not isinstance(from_date, datetime.datetime):
+                raise TypeError(
+                    "expected datetime or date but got {}".format(str(type(from_date))))
+        if from_date is None:
+            from_date = datetime.datetime.now()
+
+        from_date = from_date.astimezone(pytz.UTC)
+        cronifier = croniter(cron, from_date)
+
+        _eta = cronifier.get_next(datetime.datetime).astimezone(pytz.UTC)
+
+        if end_date is not None:
+            if not isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
+                if not isinstance(end_date, str):
+                    raise TypeError("invalid date")
+                if _format is None:
+                    raise ValueError("_format is required")
+                try:
+                    _end_date = datetime.datetime.strptime(
+                        end_date, _format)
+                except ValueError:
+                    raise ValueError("Invalid format {}".format(_format))
+
+        if end_time is not None:
+            if not isinstance(end_time, str):
+                raise TypeError("invalid time")
+            try:
+                _end_time = datetime.datetime.strptime(
+                    end_time, "%H:%M %p").time()
+            except ValueError:
+                raise ValueError(
+                    "Unable to parse the time {}".format(end_time))
+
+        if _end_date is not None:
+            if _end_time is not None:
+                _end_date_time = datetime.datetime.combine(
+                    _end_date, _end_time
+                )
+            else:
+                _end_date_time = _end_date
+            _end_date_time = _end_date_time.astimezone(pytz.UTC)
+
+        if _eta is not None and _end_date_time is not None:
+            if _eta > _end_date_time:
+                return None  # exit
+        return _eta  # exit
 
     def get_next_eta_recurring(self, timezone=None, _format=None, start_date=None, start_time=None, end_date=None, end_time=None, recurring={}):
         """
@@ -119,6 +216,7 @@ class Scheduler(object):
         """
         pass
 
+    @valid_schedule_type
     def get_next_eta(self, schedule_data={}):
         """
         Which accepts whole schema and returns the eta
@@ -133,8 +231,6 @@ class Scheduler(object):
         recurring = schedule_data.get('recurring', {})
         _format = schedule_data.get('_format', '%m/%d/%Y')
 
-        if schedule_type is None or schedule_type.lower() not in ['date_specific', 'cron', 'recurring']:
-            raise ValueError("Invalid Scheduling Type")
         if timezone is None:
             raise ValueError("timezone is required")
         if timezone not in TIMEZONES:
@@ -144,7 +240,15 @@ class Scheduler(object):
             eta = self.get_next_eta_date_specific(
                 timezone=timezone, _format=_format, schedules=schedules)
 
-        if schedule_type.lower() in ['cron', 'recurring']:
+        if schedule_type.lower() == 'cron':
+            if not isinstance(cron, str):
+                raise TypeError("invalid cron")
+            if not croniter.is_valid(cron):
+                raise ValueError("Invalid cron specified {}".format(cron))
+            eta = self.get_next_eta_cron(
+                timezone=timezone, _format=_format, end_date=end_date, end_time=end_time, cron=cron)
+
+        if schedule_type.lower() == 'recurring':
             if not schedules:
                 raise ValueError("Invalid schedules")
             if len(schedules) > 1:
@@ -153,11 +257,6 @@ class Scheduler(object):
                 raise ValueError("Invalid scheduling info")
             start_date = schedules[0].get('start_date', None)
             start_time = schedules[0].get('start_time', None)
-
-        if schedule_type.lower() == 'cron':
-            eta = self.get_next_eta_cron(timezone=timezone, start_date=start_date,
-                                         start_time=start_time, end_date=end_date, end_time=end_time, cron=cron)
-        if schedule_type.lower() == 'recurring':
             if not recurring:
                 raise ValueError("recurring is required")
             if not isinstance(recurring, dict):
