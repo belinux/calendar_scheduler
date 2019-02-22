@@ -110,7 +110,6 @@ class Scheduler(object):
         _start_date_time = _start_date_time.astimezone(pytz.UTC)
         return _start_date_time  # exit
 
-    @timezone_required
     def get_next_eta_date_specific(self, timezone=None, _format=None, from_date=None, schedules=[]):
         """
         For multiple date & times
@@ -203,6 +202,11 @@ class Scheduler(object):
                 )
             else:
                 _end_date_time = _end_date
+
+            if timezone is not None:
+                _timezone = pytz.timezone(timezone)
+                _end_date_time = _timezone.localize(
+                    _end_date_time)
             _end_date_time = _end_date_time.astimezone(pytz.UTC)
 
         if _eta is not None and _end_date_time is not None:
