@@ -7,6 +7,8 @@
 			"start_time": "<HH:MM AM/PM>*"
 		}
 	],
+	"start_date": "<mm/dd/yyyy>*",
+	"start_time": "<HH:MM AM/PM>*",
 	"end_date": "[<mm/dd/yyyy>]",
 	"end_time": "[<HH:MM AM/PM>]",
 	"recurring": {
