@@ -148,9 +148,15 @@ class Scheduler(object):
             timezone=timezone, start_date=start_date, start_time=start_time, _format=_format)
         end_date_time = self._combine_date_time(
             timezone=timezone, start_date=end_date, start_time=end_time, _format=_format)
+        if end_date_time is not None and start_date_time is not None:
+            if end_date_time < start_date_time:
+                raise ValueError(
+                    "end_date_time should greater than start_date_time")
         from_date_time = self._combine_date_time(
             timezone=timezone, start_date=from_date, _format=_format)
         current_date_time = datetime.datetime.now().astimezone(pytz.UTC)
+        if end_date_time is not None and end_date_time < current_date_time:
+            return None
         # from_date -> start_date (precedence)
         if from_date_time is None:
             if start_date_time is None:
@@ -165,12 +171,6 @@ class Scheduler(object):
             if eta > end_date_time:
                 return None  # exit
         return eta  # exit
-
-    def get_next_eta_recurring(self, timezone=None, _format=None, start_date=None, start_time=None, end_date=None, end_time=None, recurring={}):
-        """
-        Which return the next eta based on the recurring info
-        """
-        pass
 
     @valid_schedule_type
     def get_next_eta(self, schedule_data={}):
@@ -205,23 +205,4 @@ class Scheduler(object):
                 raise ValueError("Invalid cron specified {}".format(cron))
             eta = self.get_next_eta_cron(
                 timezone=timezone, _format=_format, start_date=start_date, start_time=start_time, end_date=end_date, end_time=end_time, cron=cron)
-
-        if schedule_type.lower() == 'recurring':
-            recurring = schedule_data.get('recurring', {})
-            if not schedules:
-                raise ValueError("Invalid schedules")
-            if len(schedules) > 1:
-                raise ValueError("schedules must be length 1")
-            if not isinstance(schedules[0], dict):
-                raise ValueError("Invalid scheduling info")
-            start_date = schedules[0].get('start_date', None)
-            start_time = schedules[0].get('start_time', None)
-            if not recurring:
-                raise ValueError("recurring is required")
-            if not isinstance(recurring, dict):
-                raise TypeError("Invalid recurring")
-            eta = self.get_next_eta_recurring(
-                timezone=timezone, start_date=start_date,
-                start_time=start_time, end_date=end_date, end_time=end_time,
-                recurring=recurring)
         return eta
