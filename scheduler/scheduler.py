@@ -8,7 +8,7 @@ __version__ = 0.1
 import datetime
 import pytz
 from croniter import croniter
-from enums import TIMEZONES
+from .enums import TIMEZONES
 
 
 def timezone_required(func):

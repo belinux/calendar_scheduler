@@ -1,7 +1,7 @@
 import datetime
 import pytz
 import unittest
-from scheduler import Scheduler
+from ..scheduler import Scheduler
 
 
 class TestDateSpecific(unittest.TestCase):
