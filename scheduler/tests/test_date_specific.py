@@ -55,8 +55,12 @@ class TestDateSpecific(unittest.TestCase):
 
     def test_scheduler_forward_date_single(self):
         scheduler = Scheduler()
+        _timezone = pytz.timezone('Asia/Calcutta')
         expected_datetime = datetime.datetime.strptime(
-            '02/20/2099 12:24 PM', '%m/%d/%Y %H:%M %p').astimezone(pytz.UTC)
+            '02/20/2099 12:24 PM', '%m/%d/%Y %I:%M %p')
+
+        expected_datetime = _timezone.localize(
+            expected_datetime).astimezone(pytz.UTC)
         eta = scheduler.get_next_eta(schedule_data={
             'schedule_type': 'date_specific',
             'timezone': 'Asia/Calcutta',
@@ -72,7 +76,10 @@ class TestDateSpecific(unittest.TestCase):
     def test_scheduler_previous_date_multiple(self):
         scheduler = Scheduler()
         expected_datetime = datetime.datetime.strptime(
-            '02/20/2012 12:24 PM', '%m/%d/%Y %H:%M %p').astimezone(pytz.UTC)
+            '02/20/2012 12:24 PM', '%m/%d/%Y %I:%M %p')
+        _timezone = pytz.timezone('Asia/Calcutta')
+        expected_datetime = _timezone.localize(
+            expected_datetime).astimezone(pytz.UTC)
         eta = scheduler.get_next_eta(schedule_data={
             'schedule_type': 'date_specific',
             'timezone': 'Asia/Calcutta',
@@ -92,7 +99,10 @@ class TestDateSpecific(unittest.TestCase):
     def test_scheduler_forward_date_multiple(self):
         scheduler = Scheduler()
         expected_datetime = datetime.datetime.strptime(
-            '01/20/2099 12:24 PM', '%m/%d/%Y %H:%M %p').astimezone(pytz.UTC)
+            '01/20/2099 12:24 PM', '%m/%d/%Y %I:%M %p')
+        _timezone = pytz.timezone('Asia/Calcutta')
+        expected_datetime = _timezone.localize(
+            expected_datetime).astimezone(pytz.UTC)
         eta = scheduler.get_next_eta(schedule_data={
             'schedule_type': 'date_specific',
             'timezone': 'Asia/Calcutta',
@@ -112,7 +122,10 @@ class TestDateSpecific(unittest.TestCase):
     def test_scheduler_previous_forward_date_multiple(self):
         scheduler = Scheduler()
         expected_datetime = datetime.datetime.strptime(
-            '02/20/2099 12:24 PM', '%m/%d/%Y %H:%M %p').astimezone(pytz.UTC)
+            '02/20/2099 12:24 PM', '%m/%d/%Y %I:%M %p')
+        _timezone = pytz.timezone('Asia/Calcutta')
+        expected_datetime = _timezone.localize(
+            expected_datetime).astimezone(pytz.UTC)
         eta = scheduler.get_next_eta(schedule_data={
             'schedule_type': 'date_specific',
             'timezone': 'Asia/Calcutta',

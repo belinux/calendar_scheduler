@@ -66,7 +66,7 @@ class Scheduler(object):
                         "Unable to parse the time {}".format(start_time))
                 try:
                     _start_time = datetime.datetime.strptime(
-                        start_time, "%H:%M %p").time()
+                        start_time, "%I:%M %p").time()
                 except ValueError:
                     raise ValueError(
                         "Unable to parse the time {}".format(start_time))

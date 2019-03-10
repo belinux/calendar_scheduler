@@ -68,7 +68,7 @@ class TestDateSpecific(unittest.TestCase):
     def test_scheduler_valid_cron_with_next_start_date(self):
         scheduler = Scheduler()
         expected_datetime = datetime.datetime.strptime(
-            '03/20/2099 12:25 PM', '%m/%d/%Y %H:%M %p').astimezone(pytz.UTC)
+            '03/20/2099 12:25 PM', '%m/%d/%Y %I:%M %p').astimezone(pytz.UTC)
         eta = scheduler.get_next_eta(schedule_data={
             'schedule_type': 'cron',
             'timezone': 'Asia/Calcutta',
