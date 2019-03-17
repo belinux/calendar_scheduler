@@ -115,7 +115,7 @@ class Scheduler(object):
         else:
             current_datetime = datetime.datetime.now()
 
-        current_datetime = current_datetime.astimezone(pytz.UTC)
+        current_datetime = current_datetime.replace(tzinfo=pytz.UTC)
 
         for schedule in schedules:
             if not isinstance(schedule, dict):
@@ -132,6 +132,9 @@ class Scheduler(object):
             })
             # unpack won't cause arg error
             _eta = self._combine_date_time(**schedule)
+            _eta = _eta.replace(second=0, microsecond=0)
+            current_datetime = current_datetime.replace(
+                second=30, microsecond=0)
             if current_datetime <= _eta:
                 eta = _eta
                 break  # exit
@@ -154,7 +157,7 @@ class Scheduler(object):
                     "end_date_time should greater than start_date_time")
         from_date_time = self._combine_date_time(
             timezone=timezone, start_date=from_date, _format=_format)
-        current_date_time = datetime.datetime.now().astimezone(pytz.UTC)
+        current_date_time = datetime.datetime.now().replace(tzinfo=pytz.UTC)
         if end_date_time is not None and end_date_time < current_date_time:
             return None
         # from_date -> start_date (precedence)
@@ -165,6 +168,11 @@ class Scheduler(object):
                 from_date_time = start_date_time
         if from_date_time < current_date_time:
             from_date_time = current_date_time
+        localized_timezone = pytz.timezone(timezone)
+        if from_date_time.tzinfo is None:
+            from_date_time = localized_timezone.localize(from_date_time)
+        else:
+            from_date_time = from_date_time.astimezone(localized_timezone)
         cronifier = croniter(cron, from_date_time)
         eta = cronifier.get_next(datetime.datetime).astimezone(pytz.UTC)
         if eta is not None and end_date_time is not None:
@@ -192,12 +200,12 @@ class Scheduler(object):
             eta = self.get_next_eta_date_specific(
                 timezone=timezone, _format=_format, schedules=schedules)
 
-        start_date = schedule_data.get('start_date', None)
-        start_time = schedule_data.get('start_time', None)
-        end_date = schedule_data.get('end_date', None)
-        end_time = schedule_data.get('end_time', None)
-
         if schedule_type.lower() == 'cron':
+            start_date = schedule_data.get('start_date', None)
+            start_time = schedule_data.get('start_time', None)
+            end_date = schedule_data.get('end_date', None)
+            end_time = schedule_data.get('end_time', None)
+
             cron = schedule_data.get('cron', None)
             if not isinstance(cron, str):
                 raise TypeError("invalid cron")
